@@ -1,0 +1,17 @@
+{
+  "name": "redditapiexperiment",
+  "version": "1.0.0",
+  "description": "Testing the reddit API",
+  "main": "index.js",
+  "scripts": {
+    "test": "test",
+    "start": "node index.js"
+  },
+  "author": "Alex Frankel",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^5.0.1",
+    "snoostorm": "0.0.5",
+    "snoowrap": "^1.15.2"
+  }
+}
