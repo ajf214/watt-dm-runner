@@ -1,9 +1,10 @@
 const http = require('http');
 require('dotenv').config();
-
 const Snoowrap = require('snoowrap');
 const Snoostorm = require('snoostorm');
 
+
+//server config stuff
 const hostname = '127.0.0.1';
 const port = 3001;
 
@@ -18,8 +19,9 @@ server.listen(port, hostname, () => {
 });
 
 
+/* GOOD STUFF STARTS HERE */
 
-
+//snoowrap is the object that interacts with the Reddit API directly
 // Build Snoowrap and Snoostorm clients
 const r = new Snoowrap({
     userAgent: 'alex-watt-runner-bot',
@@ -31,22 +33,83 @@ const r = new Snoowrap({
 const client = new Snoostorm(r);
 
 
-let posts = r.getTop('changemyview')
+r.getNewComments('changemyview')
+    .then(comments => {
+        console.log(comments)
+    })
+    .catch(e => console.log(e))
+
+
+
+
+//get top 25(?) posts from change my view
+let posts = r.getTop('changemyview', {limit: 100})
     .then(results => {
         console.log(results)
         results.forEach(post => {
             if(post.num_comments > 50){
-                console.log(post.title)
-                //based on this title, should be counting comments from the OP
-                getCommentsFromOp(post.id)
+                //get the author, id, title?
+                let op = post.author.name
+                let OpReplies = 0
+                let postTitle = post.title
+
+                function countOpReply(){
+                    //increment the replies counter
+                    OpReplies++
+                }
+
+                post.comments.fetchAll()
+                    .then(comments => {
+                        comments.forEach(c => {
+                            c.replies.fetchAll()
+                                .then( reps => {
+                                    reps.forEach( r => {
+                                        getAllReplies(r, op, countOpReply)                                                                           
+                                    })                                                                        
+                                })
+                                .catch(e => console.log(e))
+                        })
+                    })
+                console.log(`POST TITLE: ${postTitle} TOTAL OP REPLIES: ${OpReplies}`)    
             }
         })
     })
-    .catch(() => {
-        console.log("error")
+    .catch((e) => {
+        console.log(e)
     })
 
 
-function getCommentsFromOp(postId){
-    r.getSubmission(postId).title.then(console.log)
+
+//recursively get all the replies for a particular comment
+function getAllReplies(reply, author, countOpCallback){
+    
+    //if there is a reply
+    if(reply){
+
+        //check if the reply is the OP        
+        //callback to count replies fom OP
+        if(reply.author.name === author){
+            countOpCallback()
+        }
+
+        //callback for keeping track of the "latest" reply
+        //TODO
+
+        //fetch all the REPLIES of the individual REPLY
+        reply.replies.fetchAll()
+            .then(reps => {
+                //recursively run this funciton for each REPLY of the REPLY
+                reps.forEach(r => {
+                    getAllReplies(r, author, countOpCallback)
+                })
+            })
+            .catch(e => {
+                console.log(e)
+            })
+    }
+    
+    
 }
+
+
+
