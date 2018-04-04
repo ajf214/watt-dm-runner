@@ -19,10 +19,7 @@ server.listen(port, hostname, () => {
 });
 
 
-/* GOOD STUFF STARTS HERE */
 
-//snoowrap is the object that interacts with the Reddit API directly
-// Build Snoowrap and Snoostorm clients
 const r = new Snoowrap({
     userAgent: 'alex-watt-runner-bot',
     clientId: process.env.CLIENT_ID,
@@ -30,86 +27,38 @@ const r = new Snoowrap({
     username: process.env.REDDIT_USER,
     password: process.env.REDDIT_PASS
 });
-const client = new Snoostorm(r);
 
 
-r.getNewComments('changemyview')
-    .then(comments => {
-        console.log(comments)
-    })
-    .catch(e => console.log(e))
+lookAtAllPosts()
 
+async function lookAtAllPosts(){
+    r.getTop('changemyview', {limit: 100})
+    .then(hotPosts => {
+        let totalOpReplies = 0
+        //console.log(results)
 
-
-
-//get top 25(?) posts from change my view
-let posts = r.getTop('changemyview', {limit: 100})
-    .then(results => {
-        console.log(results)
-        results.forEach(post => {
+       const start = async () => {
+            asyncForEach(hotPosts, async (post) => {
+            //I only care about a post if it has more than 50 comments
             if(post.num_comments > 50){
-                //get the author, id, title?
-                let op = post.author.name
-                let OpReplies = 0
-                let postTitle = post.title
-
-                function countOpReply(){
-                    //increment the replies counter
-                    OpReplies++
-                }
-
-                post.comments.fetchAll()
-                    .then(comments => {
-                        comments.forEach(c => {
-                            c.replies.fetchAll()
-                                .then( reps => {
-                                    reps.forEach( r => {
-                                        getAllReplies(r, op, countOpReply)                                                                           
-                                    })                                                                        
-                                })
-                                .catch(e => console.log(e))
-                        })
-                    })
-                console.log(`POST TITLE: ${postTitle} TOTAL OP REPLIES: ${OpReplies}`)    
-            }
-        })
-    })
-    .catch((e) => {
-        console.log(e)
-    })
-
-
-
-//recursively get all the replies for a particular comment
-function getAllReplies(reply, author, countOpCallback){
-    
-    //if there is a reply
-    if(reply){
-
-        //check if the reply is the OP        
-        //callback to count replies fom OP
-        if(reply.author.name === author){
-            countOpCallback()
+                console.log(post.title)
+                //this is where some await stuff happens?
+                let comments = await post.comments.fetchAll()
+                //console.log(comments)
+            }    
+            
+            //console.log("done looking at post")
+            })
+            console.log("done with all")
         }
 
-        //callback for keeping track of the "latest" reply
-        //TODO
+        start()
 
-        //fetch all the REPLIES of the individual REPLY
-        reply.replies.fetchAll()
-            .then(reps => {
-                //recursively run this funciton for each REPLY of the REPLY
-                reps.forEach(r => {
-                    getAllReplies(r, author, countOpCallback)
-                })
-            })
-            .catch(e => {
-                console.log(e)
-            })
-    }
-    
-    
+    })
 }
 
-
-
+async function asyncForEach(array, callback) {
+    for (let index = 0; index < array.length; index++) {
+        await callback(array[index], index, array)
+    }
+}
