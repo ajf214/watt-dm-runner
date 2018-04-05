@@ -1,7 +1,20 @@
 const http = require('http');
+
 require('dotenv').config();
+
 const Snoowrap = require('snoowrap');
 
+var admin = require("firebase-admin");
+var serviceAccount = require("./fire.json")
+
+//firebase
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: "https://watt-firebase.firebaseio.com/",
+    databaseAuthVariableOverride: {
+        uid: "watt-invite-runner"
+    }    
+})
 
 //server config stuff
 const hostname = '127.0.0.1';
@@ -18,7 +31,6 @@ server.listen(port, hostname, () => {
 });
 
 
-
 const r = new Snoowrap({
     userAgent: 'alex-watt-runner-bot',
     clientId: process.env.CLIENT_ID,
@@ -27,14 +39,20 @@ const r = new Snoowrap({
     password: process.env.REDDIT_PASS
 });
 
-const waitFor = (ms) => new Promise(r => setTimeout(r, ms))
 
-r.getTop('changemyview', {limit: 100})
+r.getNew('changemyview', {limit: 50})
     .then(posts => {
-        //do stuff with each post
+        //only work on posts older than 24 hours
+        
+        let oldPosts = [];
+        const yesterdayInUtcSeconds = Math.floor(new Date().getTime()/1000) - (24*60*60)
+        posts.forEach(p => {
+            if(p.created_utc < yesterdayInUtcSeconds){
+                oldPosts.push(p)
+            }
+        })
 
-        //do stuff with just one post for now
-        start(posts)
+        start(oldPosts)
     })
     .catch(e => console.log(e))
 
@@ -49,15 +67,19 @@ async function asyncForEach(array, callback) {
   }
 
 
-  //for some reason, I have to do all the asyncForEach within this function
+//for some reason, I have to do all the asyncForEach within this function
 const start = async (posts) => {
     //for each post get all the comments
     let eligiblePosts = [];
     let invitePosts = [];
 
+
     try{
         await asyncForEach(posts, async (p) => {
+            //also need to check that the post is 24 hrs old
             if(p.num_comments > 50){
+                console.log(`Traversing ${p.title}`)
+
                 let OpReplies = 0;
 
                 let object = {
@@ -84,34 +106,79 @@ const start = async (posts) => {
                     let invite = {
                         author: p.author.name,
                         title: p.title,
-                        authorReplies: OpReplies
+                        authorReplies: OpReplies,
+                        postId: p.id
                     }
                     invitePosts.push(invite)
                 }
+                console.log(`Done reading ${p.title} with ${OpReplies} OP replies\n\n`)
             }
         })
-        console.log(invitePosts)
 
-
-        //send dms to the authors
-        await asyncForEach(eligiblePosts, async (e) =>{
-            //send message to author
-            let message = {
-                to: 'sonofdiesel',
-                subject: 'Contribute to ProjectWATT',
-                text: `Hi ${e.author}, you are invited to contribute to 
-                ProjectWATT because of your activity in your post: 
-                ${e.title}`
-            }
-            //await r.composeMessage(message)
-        })  
-        //console.log("done sending messages")
+        saveInvitedPosts(invitePosts)
+    
     }catch(e){console.log(e)}
 }
 
 
-function saveInvitedPosts(){
+async function saveInvitedPosts(invited){
+    //firebase DB
+    const db = admin.database()
+       
+    //get a db reference, which won't exist until the first push
+    const currentlyInvited = await db.ref("invites").once("value")
 
+    //for each new potential invite
+    asyncForEach(invited, async i => {
+        //by default assume you are NOT sending email
+        try{
+            if(currentlyInvited.val()){
+                //compare to currently invited
+                let isInvited = false;
+                
+                currentlyInvited.forEach(function(c){
+                    
+                    if(c.val().postId === i.postId){
+                        //already invited
+                        //BAIL
+                        console.log("invite already sent") 
+                        isInvited = true;
+                    }
+                })
+
+                if(!isInvited){
+                    const newInvite = {
+                        author: i.author,
+                        postId: i.postId
+                    }
+
+                    let message = {
+                        to: 'sonofdiesel',
+                        subject: 'Contribute to ProjectWATT',
+                        text: `Hi ${i.author}, you are invited to contribute to 
+                        ProjectWATT (http://projectwatt.com) because of your activity in your post: 
+                        ${i.title}\n\nIf you'd like to participate, you can sign up with your invite code:
+                        \n\nprojectwattpilot.  If you have any questions you can DM /u/sonofdiesel`
+                    }
+                    await r.composeMessage(message)
+
+                    const key = await db.ref("invites").push(newInvite)
+                }       
+            }
+
+            //this shoud only run 1 time ever?
+            else{
+                const newInvite = {
+                    author: i.author,
+                    postId: i.postId
+                }
+                
+                try{
+                    const key = await db.ref("invites").push(newInvite)
+                }catch(e){console.log(e)}
+            }
+        }catch(e){console.log(e)}
+    })    
 }
 
 async function getAllReplies(reply, author, countOpCallback){
