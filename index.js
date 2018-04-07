@@ -1,7 +1,7 @@
 const http = require('http');
 
 require('dotenv').config();
-
+const uuidv1 = require('uuid/v1')
 const Snoowrap = require('snoowrap');
 
 var admin = require("firebase-admin");
@@ -39,6 +39,8 @@ const r = new Snoowrap({
     password: process.env.REDDIT_PASS
 });
 
+//r.config({requestDelay: 1000, continueAfterRatelimitError: true});
+
 startProgram()
 
 function sleep(ms){
@@ -61,9 +63,7 @@ async function startProgram(){
     const scheduleInMinutes = 30
 
     //should be 1800000
-    const scheduleInMillis = scheduleInMinutes * 60 * 1000
-
-
+    const scheduleInMillis = scheduleInMinutes * 60 * 1000 
     while(true){
         await checkForNewInvites()
         
@@ -73,6 +73,7 @@ async function startProgram(){
         console.log("waiting")
         while(Date.now() < start + scheduleInMillis){}
     }
+    
 }
 
 
@@ -132,13 +133,18 @@ async function checkForNewInvites(){
                         invitePosts.push(invite)
                     }
                     console.log(`Done reading ${p.title} created at ${p.created_utc} with ${OpReplies} OP replies\n\n`)
+                    
+                    //JUST FOR TESTING - should use the proper delay mechanism in snoowrap
+                    //snoowrap has a requestDelay property, but not using it 
+                    //as this control point is a better spot
                     console.log("Waiting 5 seconds to cool off the API")
                     await sleep(5000)
                     console.log("Done waiting\n\n")
+                    
                 }
             })
 
-            saveInvitedPosts(invitePosts)
+            await saveInvitedPosts(invitePosts)
         
         }catch(e){console.log(e)}
         
@@ -153,7 +159,7 @@ async function checkForNewInvites(){
         const currentlyInvited = await db.ref("invites").once("value")
 
         //for each new potential invite
-        asyncForEach(invited, async i => {
+        await asyncForEach(invited, async i => {
             //by default assume you are NOT sending email
             try{
                 if(currentlyInvited.val()){
@@ -177,7 +183,9 @@ async function checkForNewInvites(){
                         
                         const newInvite = {
                             author: i.author,
-                            postId: i.postId
+                            postId: i.postId,
+                            dateAdded: Date.now(),
+                            wattPostUid: uuidv1() //for the invite link
                         }
 
                         let message = {
@@ -186,25 +194,32 @@ async function checkForNewInvites(){
                             text: `Hi ${i.author}, you are invited to contribute to 
                             ProjectWATT (http://projectwatt.com) because of your activity in your post: 
                             ${i.title}\n\nIf you'd like to participate, you can sign up with your invite code:
-                            \n\nprojectwattpilot.  If you have any questions you can DM /u/sonofdiesel`
+                            \n\nhttp://projectwatt.com/invite/${newInvite.wattPostUid}.  If you have any questions you can DM /u/wattinviterunner`
                         }
-                        await r.composeMessage(message)
 
+                        await r.composeMessage(message)
                         const key = await db.ref("invites").push(newInvite)
+                        console.log(`New invite sent to ${i.author} and saved to db`) 
                     }       
                 }
 
                 //this shoud only run 1 time ever?
+                /*
                 else{
+                    const testKey = uuidv1()
+
                     const newInvite = {
                         author: i.author,
-                        postId: i.postId
+                        postId: i.postId,
+                        dateAdded: Date.now(),
+                        wattPostUid: uuidv1() //for the invite link
                     }
                     
                     try{
                         const key = await db.ref("invites").push(newInvite)
                     }catch(e){console.log(e)}
                 }
+                */
             }catch(e){console.log(e)}
         })    
     }
