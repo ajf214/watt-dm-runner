@@ -39,7 +39,9 @@ const r = new Snoowrap({
     password: process.env.REDDIT_PASS
 });
 
-//r.config({requestDelay: 1000, continueAfterRatelimitError: true});
+
+//for production use
+r.config({requestDelay: 1000, continueAfterRatelimitError: true});
 
 startProgram()
 
@@ -137,9 +139,9 @@ async function checkForNewInvites(){
                     //JUST FOR TESTING - should use the proper delay mechanism in snoowrap
                     //snoowrap has a requestDelay property, but not using it 
                     //as this control point is a better spot
-                    console.log("Waiting 5 seconds to cool off the API")
-                    await sleep(5000)
-                    console.log("Done waiting\n\n")
+                    // console.log("Waiting 5 seconds to cool off the API")
+                    // await sleep(5000)
+                    // console.log("Done waiting\n\n")
                     
                 }
             })
@@ -185,6 +187,7 @@ async function checkForNewInvites(){
                             author: i.author,
                             postId: i.postId,
                             dateAdded: Date.now(),
+                            cmvTitle: i.title,
                             wattPostUid: uuidv1() //for the invite link
                         }
 
@@ -204,22 +207,30 @@ async function checkForNewInvites(){
                 }
 
                 //this shoud only run 1 time ever?
-                /*
+                
                 else{
-                    const testKey = uuidv1()
-
                     const newInvite = {
                         author: i.author,
                         postId: i.postId,
                         dateAdded: Date.now(),
+                        cmvTitle: i.title,
                         wattPostUid: uuidv1() //for the invite link
                     }
-                    
-                    try{
-                        const key = await db.ref("invites").push(newInvite)
-                    }catch(e){console.log(e)}
+
+                    let message = {
+                        to: 'sonofdiesel',
+                        subject: 'Contribute to ProjectWATT',
+                        text: `Hi ${i.author}, you are invited to contribute to 
+                        ProjectWATT (http://projectwatt.com) because of your activity in your post: 
+                        ${i.title}\n\nIf you'd like to participate, you can sign up with your invite code:
+                        \n\nhttp://projectwatt.com/invite/${newInvite.wattPostUid}.  If you have any questions you can DM /u/wattinviterunner`
+                    }
+
+                    await r.composeMessage(message)
+                    const key = await db.ref("invites").push(newInvite)
+                    console.log(`New invite sent to ${i.author} and saved to db`) 
                 }
-                */
+                
             }catch(e){console.log(e)}
         })    
     }
