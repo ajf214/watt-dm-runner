@@ -74,6 +74,9 @@ typings/
 # dotenv environment variables file
 .env
 
+config/
+src/modules/watt-invite-runner-old.js
+
 © 2018 GitHub, Inc.
 Terms
 Privacy

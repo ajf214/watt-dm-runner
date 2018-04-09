@@ -147,12 +147,18 @@ class WattInviteRunner extends DeltaBotModule {
             }
 
             const message = {
-              to: 'sonofdiesel',
-              subject: 'Contribute to ProjectWATT',
-              text: `Hi ${i.author}, you are invited to contribute to 
-                ProjectWATT (http://projectwatt.com) because of your activity in your post: 
-                ${i.title}\n\nIf you'd like to participate, you can sign up with your invite code:
-                \n\nhttp://projectwatt.com/invite/${newInvite.wattPostUid}.  If you have any questions you can DM /u/wattinviterunner`,
+              to: 'sonofdiesel', // When we are ready, 'sonofdiesel' will be replaced with i.author
+              subject: 'Invitation to the CMV Podcast and/or projectWATT',
+              text: `Hi ${i.author},
+              \n\nThis is an automated message regarding your post [${newInvite.cmvTitle}](http://reddit.com/${newInvite.postId}). The r/changemyview mod team would like to invite you to participate in one of the following options in order to keep the conversation going:
+              \n\nA) Come on [the CMV podcast](https://changemyview.net/podcast/) to talk about your experience in the subreddit, any convincing arguments you read, how you might think about the topic going forward, etc. Please submit your interest [here](https://www.reddit.com/message/compose?to=%2Fr%2FCMVpodcast&subject=Podcast).
+              \n\nB) Contribute to a research project called [projectWATT](http://projectwatt.com) (What are they thinking?) to capture your perspective on the issue you posted about. The goal of projectWATT is to create a database of perspectives to share beyond the scope of Reddit. If you’re interested, you can use this link to contribute:
+              \n\nhttp://projectwatt.com/invite/${newInvite.wattPostUid}
+              \n\n**This link is a password to contribute, edit or delete your projectWATT article. Do not share it.**
+              \n\nC) Both A & B - this would be ideal, but we understand if you don't have time or would just prefer one over the other.
+              \n\nFeel free to message us if you have any questions or concerns.
+              \n\nThanks for reading!
+              `,
             }
             await this.reddit.composeMessage(message)
             await db.ref('invites').push(newInvite)
@@ -170,10 +176,16 @@ class WattInviteRunner extends DeltaBotModule {
           const message = {
             to: 'sonofdiesel',
             subject: 'Contribute to ProjectWATT',
-            text: `Hi ${i.author}, you are invited to contribute to 
-              ProjectWATT (http://projectwatt.com) because of your activity in your post: 
-              ${i.title}\n\nIf you'd like to participate, you can sign up with your invite code:
-              \n\nhttp://projectwatt.com/invite/${newInvite.wattPostUid}.  If you have any questions you can DM /u/wattinviterunner`,
+            text: `Hi ${i.author},
+            \n\nThis is an automated message regarding your post [${newInvite.cmvTitle}](http://reddit.com/${newInvite.postId}). The r/changemyview mod team would like to invite you to participate in one of the following options in order to keep the conversation going:
+            \n\nA) Come on [the CMV podcast](https://changemyview.net/podcast/) to talk about your experience in the subreddit, any convincing arguments you read, how you might think about the topic going forward, etc. Please submit your interest [here](https://www.reddit.com/message/compose?to=%2Fr%2FCMVpodcast&subject=Podcast).
+            \n\nB) Contribute to a research project called [projectWATT](http://projectwatt.com) (What are they thinking?) to capture your perspective on the issue you posted about. The goal of projectWATT is to create a database of perspectives to share beyond the scope of Reddit. If you’re interested, you can use this link to contribute:
+            \n\nhttp://projectwatt.com/invite/${newInvite.wattPostUid}
+            \n\n**This link is a password to contribute, edit or delete your projectWATT article. Do not share it.**
+            \n\nC) Both A & B - this would be ideal, but we understand if you don't have time or would just prefer one over the other.
+            \n\nFeel free to message us if you have any questions or concerns.
+            \n\nThanks for reading!
+            `,
           }
 
           await this.reddit.composeMessage(message)
