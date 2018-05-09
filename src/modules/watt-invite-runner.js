@@ -1,14 +1,13 @@
 const admin = require('firebase-admin')
 const serviceAccount = require('../../config/credentials/fire.json')
 const uuidv1 = require('uuid/v1')
-const DeltaBotModule = require('./delta-bot-module')
 
-class WattInviteRunner extends DeltaBotModule {
-  constructor(legacyRedditApi) {
-    super(__filename, legacyRedditApi)
+class WattInviteRunner {
+  constructor(r){
+    this.reddit = r;
   }
+  
   async bootstrap() {
-    super.bootstrap()
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       databaseURL: 'https://watt-firebase.firebaseio.com/',
@@ -147,16 +146,15 @@ class WattInviteRunner extends DeltaBotModule {
             }
 
             const message = {
-              to: 'sonofdiesel', // When we are ready, 'sonofdiesel' will be replaced with i.author
+              to: i.author, // When we are ready, 'sonofdiesel' will be replaced with i.author
               subject: 'Invitation to the CMV Podcast and/or projectWATT',
-              text: `Hi ${i.author},
+              text: `Hi /u/${i.author},
               \n\nThis is an automated message regarding your post [${newInvite.cmvTitle}](http://reddit.com/${newInvite.postId}). The r/changemyview mod team would like to invite you to participate in one of the following options in order to keep the conversation going:
               \n\nA) Come on [the CMV podcast](https://changemyview.net/podcast/) to talk about your experience in the subreddit, any convincing arguments you read, how you might think about the topic going forward, etc. Please submit your interest [here](https://www.reddit.com/message/compose?to=%2Fr%2FCMVpodcast&subject=Podcast).
               \n\nB) Contribute to a research project called [projectWATT](http://projectwatt.com) (What are they thinking?) to capture your perspective on the issue you posted about. The goal of projectWATT is to create a database of perspectives to share beyond the scope of Reddit. If you’re interested, you can use this link to contribute:
               \n\nhttp://projectwatt.com/invite/${newInvite.wattPostUid}
               \n\n**This link is a password to contribute, edit or delete your projectWATT article. Do not share it.**
               \n\nC) Both A & B - this would be ideal, but we understand if you don't have time or would just prefer one over the other.
-              \n\nFeel free to message us if you have any questions or concerns.
               \n\nThanks for reading!
               `,
             }
