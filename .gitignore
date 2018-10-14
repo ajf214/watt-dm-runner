@@ -76,6 +76,7 @@ typings/
 
 config/
 src/modules/watt-invite-runner-old.js
+build-and-release.sh
 
 © 2018 GitHub, Inc.
 Terms
