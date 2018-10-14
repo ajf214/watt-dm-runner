@@ -4,20 +4,6 @@ const _ = require('lodash')
 require('dotenv').config();
 const Snoowrap = require('snoowrap');
 
-/*
-var admin = require("firebase-admin");
-var serviceAccount = require("./fire.json")
-
-//firebase
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://watt-firebase.firebaseio.com/",
-    databaseAuthVariableOverride: {
-        uid: "watt-invite-runner"
-    }    
-})
-*/
-
 //server config stuff
 const hostname = '127.0.0.1';
 const port = 3001;
@@ -42,25 +28,8 @@ const r = new Snoowrap({
 });
 
 
-//for production use
+// for production use
 r.config({requestDelay: 1000, continueAfterRatelimitError: true});
-
-/*
-    // begin loading modules
-const Modules = require('./modules')
-_.each(Modules, async (Module, name) => {
-    try {
-    console.log(`Trying to load ${name} module!`.bgCyan)
-    const module = new Module(r)
-    await module.bootstrap()
-    } catch (err) {
-    console.error(`${err.stack}`.bgRed)
-    }
-    console.log(`Done trying to load ${name} module!`.bgCyan)
-}, {})
-console.log('Finished loading modules!'.bgGreen.cyan)
-*/
-
 startProgram()
 
 
